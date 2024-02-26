@@ -12,11 +12,11 @@ CHATGPT_CYAN_LABEL="\033[36mchatgpt \033[0m"
 PROCESSING_LABEL="\n\033[90mProcessing... \033[0m\033[0K\r"
 OVERWRITE_PROCESSING_LINE="             \033[0K\r"
 
-if [[ -z "$OPENAI_KEY" ]]; then
-	echo "You need to set your OPENAI_KEY to use this script"
-	echo "You can set it temporarily by running this on your terminal: export OPENAI_KEY=YOUR_KEY_HERE"
-	exit 1
-fi
+# if [[ -z "EMPTY" ]]; then
+# 	echo "You need to set your OPENAI_KEY to use this script"
+# 	echo "You can set it temporarily by running this on your terminal: export OPENAI_KEY=YOUR_KEY_HERE"
+# 	exit 1
+# fi
 
 usage() {
 	cat <<EOF
@@ -81,11 +81,11 @@ handle_error() {
 # request to openAI API models endpoint. Returns a list of models
 # takes no input parameters
 list_models() {
-	models_response=$(curl https://api.openai.com/v1/models \
+	models_response=$(curl http://10.200.200.1:1234/v1/models \
 		-sS \
-		-H "Authorization: Bearer $OPENAI_KEY")
-	handle_error "$models_response"
-	models_data=$(echo $models_response | jq -r -C '.data[] | {id, owned_by, created}')
+		-H "Authorization: Bearer EMPTY")
+	handle_error "mixtrals_response"
+	models_data=$(echo mixtrals_response | jq -r -C '.data[] | {id, owned_by, created}')
 	echo -e "$OVERWRITE_PROCESSING_LINE"
 	echo -e "${CHATGPT_CYAN_LABEL}This is a list of models currently available at OpenAI API:\n ${models_data}"
 }
@@ -94,12 +94,12 @@ list_models() {
 request_to_completions() {
 	local prompt="$1"
 
-	curl https://api.openai.com/v1/completions \
+	curl http://10.200.200.1:1234/v1/completions \
 		-sS \
 		-H 'Content-Type: application/json' \
-		-H "Authorization: Bearer $OPENAI_KEY" \
+		-H "Authorization: Bearer EMPTY" \
 		-d '{
-  			"model": "'"$MODEL"'",
+  			"model": "'"mixtral"'",
   			"prompt": "'"$prompt"'",
   			"max_tokens": '$MAX_TOKENS',
   			"temperature": '$TEMPERATURE'
@@ -110,10 +110,10 @@ request_to_completions() {
 # $1 should be the prompt
 request_to_image() {
 	local prompt="$1"
-	image_response=$(curl https://api.openai.com/v1/images/generations \
+	image_response=$(curl http://10.200.200.1:1234/v1/images/generations \
 		-sS \
 		-H 'Content-Type: application/json' \
-		-H "Authorization: Bearer $OPENAI_KEY" \
+		-H "Authorization: Bearer EMPTY" \
 		-d '{
     		"prompt": "'"${prompt#*image:}"'",
     		"n": 1,
@@ -127,12 +127,12 @@ request_to_chat() {
 	local message="$1"
 	escaped_system_prompt=$(escape "$SYSTEM_PROMPT")
 	
-	curl https://api.openai.com/v1/chat/completions \
+	curl http://10.200.200.1:1234/chat/completions \
 		-sS \
 		-H 'Content-Type: application/json' \
-		-H "Authorization: Bearer $OPENAI_KEY" \
+		-H "Authorization: Bearer EMPTY" \
 		-d '{
-            "model": "'"$MODEL"'",
+            "model": "'"mixtral"'",
             "messages": [
                 {"role": "system", "content": "'"$escaped_system_prompt"'"},
                 '"$message"'
@@ -369,9 +369,9 @@ while $running; do
 	elif [[ "$prompt" =~ ^model: ]]; then
 		models_response=$(curl https://api.openai.com/v1/models \
 			-sS \
-			-H "Authorization: Bearer $OPENAI_KEY")
-		handle_error "$models_response"
-		model_data=$(echo $models_response | jq -r -C '.data[] | select(.id=="'"${prompt#*model:}"'")')
+			-H "Authorization: Bearer EMPTY")
+		handle_error "mixtrals_response"
+		model_data=$(echo mixtrals_response | jq -r -C '.data[] | select(.id=="'"${prompt#*model:}"'")')
 		echo -e "$OVERWRITE_PROCESSING_LINE"
 		echo -e "${CHATGPT_CYAN_LABEL}Complete details for model: ${prompt#*model:}\n ${model_data}"
 	elif [[ "$prompt" =~ ^command: ]]; then
@@ -406,7 +406,7 @@ while $running; do
 		timestamp=$(date +"%Y-%m-%d %H:%M")
 		echo -e "$timestamp $prompt \n$response_data \n" >>~/.chatgpt_history
 
-	elif [[ "$MODEL" =~ ^gpt- ]]; then
+	elif [[ "mixtral" =~ ^gpt- ]]; then
 		# escape quotation marks, new lines, backslashes...
 		request_prompt=$(escape "$prompt")
 
